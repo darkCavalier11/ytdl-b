@@ -34,7 +34,7 @@ func (s *Server) GetFileMeta(ctx context.Context, req *gen.RequestUrl) (*gen.Fil
 	return fileMeta.ConvertToGRPCFileMeta(), nil
 }
 
-func (*Server) FileStreaming(req *gen.FileRequest, stream gen.FileStreamingService_FileStreamingServer) error {
+func (*Server) GetFileBytesStream(req *gen.FileRequest, stream gen.FileStreamingService_GetFileBytesStreamServer) error {
 	cmd := exec.Command("yt-dlp", "-o", "-", "-f", req.GetFormatId(), req.GetUrl())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -72,5 +72,5 @@ func InitClient() {
 		log.Fatalf("Unable to connect to the server %v", err)
 	}
 	defer cc.Close()
-	getFileMetaHandler(cc)
+	serverStreamingHandler(cc)
 }

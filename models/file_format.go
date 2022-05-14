@@ -2,6 +2,7 @@ package models
 
 import "github.com/darkCavalier11/downloader_backend/grpc_module/gen"
 
+// FileFormat is a part of FileMeta
 type FileFormat struct {
 	FormatId   string  `json:"format_id"`
 	FormatNote string  `json:"format_note"`

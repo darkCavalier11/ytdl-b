@@ -17,7 +17,7 @@ func serverStreamingHandler(cc *grpc.ClientConn) error {
 		FormatId: "140",
 		Url:      "https://www.youtube.com/watch?v=xUwePVuH1PM",
 	}
-	res, err := c.FileStreaming(context.Background(), req, maxSizeOption)
+	res, err := c.GetFileBytesStream(context.Background(), req, maxSizeOption)
 	if err != nil {
 		return fmt.Errorf("unable to make request to the server. %v", err)
 	}

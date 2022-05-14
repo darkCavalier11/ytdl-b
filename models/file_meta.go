@@ -2,6 +2,8 @@ package models
 
 import "github.com/darkCavalier11/downloader_backend/grpc_module/gen"
 
+// FileMeta struct is necessary for parsing the dumped json in the stdout and convert
+// it to generated grpc struct to send to client
 type FileMeta struct {
 	Id             string        `json:"id"`
 	Title          string        `json:"title"`

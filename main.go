@@ -1,48 +1,24 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/darkCavalier11/downloader_backend/models"
+	"github.com/darkCavalier11/downloader_backend/grpc_module"
+	"github.com/darkCavalier11/downloader_backend/grpc_module/gen"
+	"google.golang.org/grpc"
 	"log"
-	"os/exec"
-
-	"github.com/gofiber/fiber/v2"
+	"net"
 )
 
 func main() {
-	app := fiber.New()
+	lis, err := net.Listen("tcp", ":8000")
+	if err != nil {
+		log.Fatalf("unable to start server %v", err)
+	}
+	s := grpc.NewServer()
+	gen.RegisterFileStreamingServiceServer(s, &grpc_module.Server{})
+	go grpc_module.InitClient()
 
-	app.Get("/", func(ctx *fiber.Ctx) error {
-		return ctx.SendString("Hello World!")
-	})
-
-	app.Get("/get_file_meta", func(c *fiber.Ctx) error {
-		query := struct {
-			Url string `json:"url"`
-		}{}
-		fmt.Println(c.QueryParser(&query))
-		err := c.QueryParser(&query)
-		if err != nil {
-			return fiber.ErrBadRequest
-		}
-		log.Println(query)
-		cmd := exec.Command("yt-dlp", "--dump-json", "--skip-download", query.Url)
-		stdout, err := cmd.Output()
-
-		if err != nil {
-			return fiber.ErrServiceUnavailable
-		}
-
-		var fileMeta models.FileMeta
-		err = json.Unmarshal([]byte(stdout), &fileMeta)
-		if err != nil {
-			log.Println(err)
-			return fiber.ErrBadRequest
-		}
-		_ = stdout
-		return c.JSON(fileMeta)
-	})
-
-	log.Fatalln(app.Listen(":8000"))
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Unable to bind with grpc_module %v", err)
+	}
+	log.Println("server started")
 }

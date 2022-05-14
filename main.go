@@ -15,6 +15,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	gen.RegisterFileStreamingServiceServer(s, &grpc_module.Server{})
+	gen.RegisterGetFileMetaServiceServer(s, &grpc_module.Server{})
 	go grpc_module.InitClient()
 
 	if err := s.Serve(lis); err != nil {

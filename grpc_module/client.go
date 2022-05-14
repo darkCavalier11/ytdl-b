@@ -6,12 +6,10 @@ import (
 	"github.com/darkCavalier11/downloader_backend/grpc_module/gen"
 	"google.golang.org/grpc"
 	"io"
-	"log"
 	"os"
-	"time"
 )
 
-func serverStreamingHandler(cc *grpc.ClientConn) {
+func serverStreamingHandler(cc *grpc.ClientConn) error {
 	maxSizeOption := grpc.MaxCallRecvMsgSize(4 * 1024 * 1024)
 
 	c := gen.NewFileStreamingServiceClient(cc)
@@ -19,27 +17,34 @@ func serverStreamingHandler(cc *grpc.ClientConn) {
 		FormatId: "140",
 		Url:      "https://www.youtube.com/watch?v=xUwePVuH1PM",
 	}
-	res, err := c.ServerStreaming(context.Background(), req, maxSizeOption)
+	res, err := c.FileStreaming(context.Background(), req, maxSizeOption)
 	if err != nil {
-		log.Fatalf("Unable to make request to the server. %v", err)
+		return fmt.Errorf("unable to make request to the server. %v", err)
 	}
 	f, err := os.Create("file.webm")
-	n := 0
-	t := time.Now()
 	for {
 		msg, err := res.Recv()
 		if err == io.EOF {
-			log.Println("Finished file receiving")
 			break
 		}
 		if err != nil {
-			log.Fatalf("Error occured during server streaming %v", err)
+			return fmt.Errorf("error occured during server streaming > %v", err)
 		}
-		rc, err := f.Write(msg.GetFileBytes())
+		_, err = f.Write(msg.GetFileBytes())
 		if err != nil {
-			log.Fatalln(err)
+			return fmt.Errorf("error occured writing file > %v", err)
 		}
-		n += rc
 	}
-	fmt.Println(time.Since(t).Seconds())
+	return nil
+}
+
+func getFileMetaHandler(cc *grpc.ClientConn) error {
+	c := gen.NewGetFileMetaServiceClient(cc)
+	req := gen.RequestUrl{Url: "https://www.youtube.com/watch?v=geYV5R7Nv2g"}
+	res, err := c.GetFileMeta(context.Background(), &req)
+	if err != nil {
+		return fmt.Errorf("unable to get file meta %v", err)
+	}
+	fmt.Println(res.Title)
+	return nil
 }

@@ -2,7 +2,11 @@ package grpc_module
 
 import (
 	"bufio"
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/darkCavalier11/downloader_backend/grpc_module/gen"
+	"github.com/darkCavalier11/downloader_backend/models"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
@@ -12,16 +16,32 @@ import (
 
 type Server struct {
 	gen.UnimplementedFileStreamingServiceServer
+	gen.UnimplementedGetFileMetaServiceServer
 }
 
-func (*Server) ServerStreaming(req *gen.FileRequest, stream gen.FileStreamingService_ServerStreamingServer) error {
-	cmd := exec.Command("yt-dlp", "-f", req.GetFormatId(), req.GetUrl())
+func (s *Server) GetFileMeta(ctx context.Context, req *gen.RequestUrl) (*gen.FileMeta, error) {
+	url := req.GetUrl()
+	cmd := exec.Command("yt-dlp", "--dump-json", "--skip-download", url)
+	stdout, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error occured getting json meta for url %v > %v", url, err)
+	}
+	var fileMeta models.FileMeta
+	err = json.Unmarshal(stdout, &fileMeta)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing json %v", err)
+	}
+	return fileMeta.ConvertToGRPCFileMeta(), nil
+}
+
+func (*Server) FileStreaming(req *gen.FileRequest, stream gen.FileStreamingService_FileStreamingServer) error {
+	cmd := exec.Command("yt-dlp", "-o", "-", "-f", req.GetFormatId(), req.GetUrl())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return fmt.Errorf("error at stdout pipe > %v", err)
 	}
 	if err = cmd.Start(); err != nil {
-		log.Fatalf("error occured %v", err)
+		return fmt.Errorf("error starting command > %v", err)
 	}
 	r := bufio.NewReader(stdout)
 	buf := make([]byte, 0, 4*1024*1024)
@@ -40,11 +60,8 @@ func (*Server) ServerStreaming(req *gen.FileRequest, stream gen.FileStreamingSer
 			FileBytes: buf,
 		})
 		if err != nil {
-			log.Fatalf("error, %v", err)
+			return fmt.Errorf("error completing file streaming %v", err)
 		}
-	}
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -55,5 +72,5 @@ func InitClient() {
 		log.Fatalf("Unable to connect to the server %v", err)
 	}
 	defer cc.Close()
-	serverStreamingHandler(cc)
+	getFileMetaHandler(cc)
 }

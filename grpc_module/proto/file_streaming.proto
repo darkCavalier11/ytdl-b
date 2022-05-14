@@ -14,5 +14,5 @@ message FileResponse {
 }
 
 service FileStreamingService {
-    rpc ServerStreaming(FileRequest) returns (stream FileResponse) {};
+    rpc FileStreaming(FileRequest) returns (stream FileResponse) {};
 }

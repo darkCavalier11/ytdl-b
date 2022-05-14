@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileStreamingServiceClient interface {
-	ServerStreaming(ctx context.Context, in *FileRequest, opts ...grpc.CallOption) (FileStreamingService_ServerStreamingClient, error)
+	FileStreaming(ctx context.Context, in *FileRequest, opts ...grpc.CallOption) (FileStreamingService_FileStreamingClient, error)
 }
 
 type fileStreamingServiceClient struct {
@@ -33,12 +33,12 @@ func NewFileStreamingServiceClient(cc grpc.ClientConnInterface) FileStreamingSer
 	return &fileStreamingServiceClient{cc}
 }
 
-func (c *fileStreamingServiceClient) ServerStreaming(ctx context.Context, in *FileRequest, opts ...grpc.CallOption) (FileStreamingService_ServerStreamingClient, error) {
-	stream, err := c.cc.NewStream(ctx, &FileStreamingService_ServiceDesc.Streams[0], "/file_streaming.FileStreamingService/ServerStreaming", opts...)
+func (c *fileStreamingServiceClient) FileStreaming(ctx context.Context, in *FileRequest, opts ...grpc.CallOption) (FileStreamingService_FileStreamingClient, error) {
+	stream, err := c.cc.NewStream(ctx, &FileStreamingService_ServiceDesc.Streams[0], "/file_streaming.FileStreamingService/FileStreaming", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &fileStreamingServiceServerStreamingClient{stream}
+	x := &fileStreamingServiceFileStreamingClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -48,16 +48,16 @@ func (c *fileStreamingServiceClient) ServerStreaming(ctx context.Context, in *Fi
 	return x, nil
 }
 
-type FileStreamingService_ServerStreamingClient interface {
+type FileStreamingService_FileStreamingClient interface {
 	Recv() (*FileResponse, error)
 	grpc.ClientStream
 }
 
-type fileStreamingServiceServerStreamingClient struct {
+type fileStreamingServiceFileStreamingClient struct {
 	grpc.ClientStream
 }
 
-func (x *fileStreamingServiceServerStreamingClient) Recv() (*FileResponse, error) {
+func (x *fileStreamingServiceFileStreamingClient) Recv() (*FileResponse, error) {
 	m := new(FileResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (x *fileStreamingServiceServerStreamingClient) Recv() (*FileResponse, error
 // All implementations must embed UnimplementedFileStreamingServiceServer
 // for forward compatibility
 type FileStreamingServiceServer interface {
-	ServerStreaming(*FileRequest, FileStreamingService_ServerStreamingServer) error
+	FileStreaming(*FileRequest, FileStreamingService_FileStreamingServer) error
 	mustEmbedUnimplementedFileStreamingServiceServer()
 }
 
@@ -77,8 +77,8 @@ type FileStreamingServiceServer interface {
 type UnimplementedFileStreamingServiceServer struct {
 }
 
-func (UnimplementedFileStreamingServiceServer) ServerStreaming(*FileRequest, FileStreamingService_ServerStreamingServer) error {
-	return status.Errorf(codes.Unimplemented, "method ServerStreaming not implemented")
+func (UnimplementedFileStreamingServiceServer) FileStreaming(*FileRequest, FileStreamingService_FileStreamingServer) error {
+	return status.Errorf(codes.Unimplemented, "method FileStreaming not implemented")
 }
 func (UnimplementedFileStreamingServiceServer) mustEmbedUnimplementedFileStreamingServiceServer() {}
 
@@ -93,24 +93,24 @@ func RegisterFileStreamingServiceServer(s grpc.ServiceRegistrar, srv FileStreami
 	s.RegisterService(&FileStreamingService_ServiceDesc, srv)
 }
 
-func _FileStreamingService_ServerStreaming_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _FileStreamingService_FileStreaming_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(FileRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(FileStreamingServiceServer).ServerStreaming(m, &fileStreamingServiceServerStreamingServer{stream})
+	return srv.(FileStreamingServiceServer).FileStreaming(m, &fileStreamingServiceFileStreamingServer{stream})
 }
 
-type FileStreamingService_ServerStreamingServer interface {
+type FileStreamingService_FileStreamingServer interface {
 	Send(*FileResponse) error
 	grpc.ServerStream
 }
 
-type fileStreamingServiceServerStreamingServer struct {
+type fileStreamingServiceFileStreamingServer struct {
 	grpc.ServerStream
 }
 
-func (x *fileStreamingServiceServerStreamingServer) Send(m *FileResponse) error {
+func (x *fileStreamingServiceFileStreamingServer) Send(m *FileResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -123,8 +123,8 @@ var FileStreamingService_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ServerStreaming",
-			Handler:       _FileStreamingService_ServerStreaming_Handler,
+			StreamName:    "FileStreaming",
+			Handler:       _FileStreamingService_FileStreaming_Handler,
 			ServerStreams: true,
 		},
 	},

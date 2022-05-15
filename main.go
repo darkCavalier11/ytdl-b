@@ -21,5 +21,4 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Unable to bind with grpc_module %v", err)
 	}
-	log.Println("server started")
 }

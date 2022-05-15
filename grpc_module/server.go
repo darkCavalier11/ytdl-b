@@ -35,16 +35,28 @@ func (s *Server) GetFileMeta(ctx context.Context, req *gen.RequestUrl) (*gen.Fil
 }
 
 func (*Server) GetFileBytesStream(req *gen.FileRequest, stream gen.FileStreamingService_GetFileBytesStreamServer) error {
+	err := stream.Send(&gen.FileResponse{
+		FileBytes: []byte{},
+		Status:    "Queued",
+	})
 	cmd := exec.Command("yt-dlp", "-o", "-", "-f", req.GetFormatId(), req.GetUrl())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		err = stream.Send(&gen.FileResponse{
+			FileBytes: []byte{},
+			Status:    "Error occurred!",
+		})
 		return fmt.Errorf("error at stdout pipe > %v", err)
 	}
 	if err = cmd.Start(); err != nil {
+		err = stream.Send(&gen.FileResponse{
+			FileBytes: []byte{},
+			Status:    "Error occurred!",
+		})
 		return fmt.Errorf("error starting command > %v", err)
 	}
 	r := bufio.NewReader(stdout)
-	buf := make([]byte, 0, 4*1024*1024)
+	buf := make([]byte, 0, 4*1024)
 	for {
 		n, err := r.Read(buf[:cap(buf)])
 		buf = buf[:n]
@@ -53,11 +65,16 @@ func (*Server) GetFileBytesStream(req *gen.FileRequest, stream gen.FileStreaming
 				break
 			}
 			if err == io.EOF {
+				err = stream.Send(&gen.FileResponse{
+					FileBytes: []byte{},
+					Status:    "Completed",
+				})
 				break
 			}
 		}
 		err = stream.Send(&gen.FileResponse{
 			FileBytes: buf,
+			Status:    "In Progress",
 		})
 		if err != nil {
 			return fmt.Errorf("error completing file streaming %v", err)
@@ -72,5 +89,8 @@ func InitClient() {
 		log.Fatalf("Unable to connect to the server %v", err)
 	}
 	defer cc.Close()
-	serverStreamingHandler(cc)
+	err = serverStreamingHandler(cc)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }

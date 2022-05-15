@@ -11,6 +11,7 @@ message FileRequest {
 
 message FileResponse {
     bytes fileBytes = 1;
+    string status = 2;
 }
 
 service FileStreamingService {
